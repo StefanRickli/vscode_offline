@@ -19,10 +19,14 @@ try {
     catch {
         throw
     }
-    $CurrentSettingsPath = Join-Path "$Env:AppData" "Code\User\settings.json"
+    $CurrentSettingsDir = Join-Path "$Env:AppData" "Code\User"
+    $CurrentSettingsPath = Join-Path "$CurrentSettingsDir" "\settings.json"
+    if (-not (Test-Path $CurrentSettingsPath)) {
+        $null = New-Item "$CurrentSettingsDir" -ItemType Directory -Force
+    }
     try {
         $CurrentSettings = Get-Content "$CurrentSettingsPath" | ConvertFrom-Json
-    } catch [System.IO.FileNotFoundException] {
+    } catch [System.Management.Automation.ItemNotFoundException] {
         $CurrentSettings = @{}
     } catch {
         throw
