@@ -6,6 +6,7 @@ It also makes use of your company's HTTP proxy and handles McAfee's Web Gateway.
 
 ## Installation
 
+- Create or look up the credentials of a proxy service user
 - On your internet-connected device:
   - Copy `load_env.ps1.example` to `load_env.ps1` and fill in your proxy information
   - Copy `extensions.json.example` to `extensions.json.example` and rename `target1` to a hostname where you want to use VS Code Remote SSH later. You can add as many hosts 
