@@ -1,7 +1,18 @@
 $ErrorActionPreference = 'Stop'
 $PSNativeCommandUseErrorActionPreference = $true
 
-. ".\load_env.ps1"
+$EnvFile = ".\load_env.ps1"
+$ExtensionsListFile = ".\extensions.json"
+
+if (-not (Test-Path "$EnvFile")) {
+  Throw "Could not find '$EnvFile'. Please copy the example file and adjust it to your needs."
+}
+
+if (-not (Test-Path "$ExtensionsListFile")) {
+  Throw "Could not find '$ExtensionsListFile'. Please copy the example file and adjust it to your needs."
+}
+
+. "$EnvFile"
 
 $RequiredEnvVars = @("PROXY_URL", "PROXY_USER", "PROXY_PROMPT")
 $MissingVars = $requiredEnvVars | Where-Object { -not (Test-Path "Env:$($_)") }
@@ -26,7 +37,7 @@ Write-Output "Target Directory: '$OutDir'"
 
 "$LatestCommit" | Out-File -FilePath (Join-Path "${OutDir}" "commit.txt")
 "$LatestVersion" | Out-File -FilePath (Join-Path "${OutDir}" "version.txt")
-Copy-Item ".\extensions.json" "$OutDir\"
+Copy-Item "$ExtensionsListFile" "$OutDir\"
 
 Write-Output "Downloading VS Code $LatestVersion (sha256=$LatestCommit)..."
 $VsCodeDownloadUrl = "https://update.code.visualstudio.com/${LatestVersion}/win32-x64-user/stable"
@@ -39,7 +50,7 @@ $OutFile = Join-Path $OutDir "\vscode-server-linux-x64-${LatestVersion}.tar.gz"
 .\local_scripts\download_using_proxy.ps1 -uri "$vscode_server_url" -OutFile "$OutFile" -ProxyUrl $ProxyUrl -ProxyCredential $ProxyCredential
 
 Write-Output "Downloading Extensions:"
-$ExtensionLists = Get-Content ".\extensions.json" | Convertfrom-Json
+$ExtensionLists = Get-Content "$ExtensionsListFile" | Convertfrom-Json
 $allExtensions = $ExtensionLists.PSObject.Properties.Value | ForEach-Object { $_ } | Select-Object -Unique
 
 foreach ($ExtensionIdentifier in $allExtensions)
