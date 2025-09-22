@@ -1,0 +1,19 @@
+{
+    "jumphost": [
+        "ms-vscode.PowerShell",
+        "ms-vscode-remote.remote-ssh",
+        "ms-vscode-remote.remote-ssh-edit",
+        "ms-vscode.remote-explorer"
+    ],
+    "target1": [
+        "redhat.ansible",
+        "rioj7.command-variable",
+        "tamasfe.even-better-toml",
+        "wholroyd.jinja",
+        "ms-python.vscode-pylance",
+        "ms-python.python",
+        "ms-python.debugpy",
+        "yy0931.save-as-root",
+        "redhat.vscode-yaml"
+    ]
+}

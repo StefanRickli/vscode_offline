@@ -1,0 +1,3 @@
+$env:PROXY_URL = "http://proxy.example.com:8080"
+$env:PROXY_USER = "mydomain\user"
+$env:PROXY_PROMPT = "WARNING: Credentials are sent in plain-text up to the HTTP proxy!`nThus, don't send privileged credentials; use a service-user instead."

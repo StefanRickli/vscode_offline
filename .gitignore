@@ -1,0 +1,5 @@
+/downloads/*
+!/downloads/.gitkeep
+/*.zip
+extensions.json
+load_env.ps1
