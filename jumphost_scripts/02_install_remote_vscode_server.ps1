@@ -14,6 +14,12 @@ catch {
     Exit 1
 }
 
+# About Passwords for SSH:
+# Seems like there is no way to give the vanilla SCP and SSH the password.
+# Posh-SSH could do it but we want to avoid 3rd party software whenever possible.
+# So, unfortunately, we need to pass the password for each invocation of SCP and SSH
+# for the time being. (At least as long as we rely on password-based login methods.)
+
 if ("" -eq $Directory) {
     $Directory = .\pick_version.ps1 -ParentPath "." -Take 5 -SortBy LastWriteTime
 }
@@ -21,38 +27,50 @@ Push-Location $Directory
 
 try {
     $Version = (Get-Content "version.txt").Trim()
+    $Commit = (Get-Content "commit.txt").Trim()
+    $RemoteTempDir = "/tmp/vscode-${Version}"
+    $RemoteInstallScriptPath = ".\remote_scripts\install_vscode_server.sh"
 
+    $PostInstallScripts = @()
+    if (Test-Path "remote_post_install_scripts.json") {
+        $PostInstallScriptsList = ((Get-Content "remote_post_install_scripts.json") | ConvertFrom-Json).PSObject.Properties["$TargetHost"].Value
+        if (-not ($null -eq $PostInstallScriptsList)) {
+            $PostInstallScripts = $PostInstallScriptsList | ForEach-Object { Get-ChildItem ".\remote_scripts\post_install\$($_)" }
+        }
+    }
+
+    $ArchiveName = "vscode-server-${Version}-${TargetHost}"
     $VSCodeServerArchive = (Get-ChildItem ".\vscode-server-linux-x64-${Version}.tar.gz")[0].Name
+    $FileList = @("$VSCodeServerArchive") + $RemoteInstallScriptPath + $PostInstallScripts.FullName
+
+    Remove-Item -Force -ErrorAction Ignore @(".\${ArchiveName}.tar", ".\${ArchiveName}.tar.gz")
+
+    Write-Output "Packing necessary files into '${ArchiveName}.tar.gz'"
+    $dummy = & "C:\Program Files\7-Zip\7z.exe" a -ttar ".\${ArchiveName}.tar" $FileList
+    $dummy = & "C:\Program Files\7-Zip\7z.exe" a -tgzip ".\${ArchiveName}.tar.gz" ".\${ArchiveName}.tar"
 
     $UserName = ($Env:UserName).ToUpper()
     $TargetUserHome = "/home/${UserName}"
 
-    Write-Output "Uploading File to ${TargetHost}..."
-    scp -q ".\${VSCodeServerArchive}" "${UserName}@${TargetHost}:${TargetUserHome}/${VSCodeServerArchive}"
-    Write-Output "Done. Unpacking and installing on ${TargetHost}..."
+    Write-Output "Uploading Files to ${TargetHost}..."
+    scp -q ".\${ArchiveName}.tar.gz" "${UserName}@${TargetHost}:${TargetUserHome}/${VSCodeServerArchive}"
+    Write-Output "Unpacking and installing on ${TargetHost}..."
 
-    $Commit = (Get-Content "commit.txt").Trim()
     $TargetBinDir = "${TargetUserHome}/.vscode-server/bin/${Commit}"
 
-    $Commands = @"
-sudo -v || { echo "You cannot sudo without password! Abort."; exit 1; }
+    $RemoteBootstrap = @"
+echo "Unpacking files into '${RemoteTempDir}' ..."
+mkdir -p "${RemoteTempDir}" || exit 1
+tar xf "${TargetUserHome}/${VSCodeServerArchive}" -C "${RemoteTempDir}" || exit 1
 
-echo "Creating directory '${TargetBinDir}' ..."
-mkdir -p "${TargetBinDir}" || exit 1
+echo "Running vscode-server install script..."
+chmod +x "${RemoteTempDir}/install_vscode_server.sh" || exit 1
+"${RemoteTempDir}/install_vscode_server.sh" "${RemoteTempDir}" "${VSCodeServerArchive}" "${TargetBinDir}" || exit 1
 
-echo "Unpacking VS Code Server into bin directory..."
-tar xf "${TargetUserHome}/${VSCodeServerArchive}" -C "${TargetBinDir}" --strip-components=1 || exit 1
-
-echo "Creating entries in /etc/hosts (if not present)..."
-sudo sed -i '/[[:space:]]mobile.events.data.microsoft.com$/d' /etc/hosts || exit 1
-echo '8.8.8.8 mobile.events.data.microsoft.com' | sudo tee -a /etc/hosts || exit 1
-sudo sed -i '/[[:space:]]marketplace.visualstudio.com$/d' /etc/hosts || exit 1
-echo '8.8.8.8 marketplace.visualstudio.com' | sudo tee -a /etc/hosts || exit 1
-
-echo "Done."
+echo "VS Code Server ${Version} installation successful."
 "@ -replace "`r", ""
 
-    $Commands | ssh "$UserName@$TargetHost" 'bash -s'
+    $RemoteBootstrap | ssh "$UserName@$TargetHost" "bash -s"
 
 }
 finally {

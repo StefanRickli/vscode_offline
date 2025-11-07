@@ -1,0 +1,5 @@
+{
+    "target1": [
+        "fix_vscode_server_umask.sh"
+    ]
+}

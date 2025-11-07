@@ -3,6 +3,8 @@ $PSNativeCommandUseErrorActionPreference = $true
 
 $EnvFile = ".\load_env.ps1"
 $ExtensionsListFile = ".\extensions.json"
+$RemoteScriptsDefinitions = ".\remote_post_install_scripts.json"
+$RemoteScripts = ".\remote_scripts"
 
 if (-not (Test-Path "$EnvFile")) {
   Throw "Could not find '$EnvFile'. Please copy the example file and adjust it to your needs."
@@ -38,6 +40,8 @@ Write-Output "Target Directory: '$OutDir'"
 "$LatestCommit" | Out-File -FilePath (Join-Path "${OutDir}" "commit.txt")
 "$LatestVersion" | Out-File -FilePath (Join-Path "${OutDir}" "version.txt")
 Copy-Item "$ExtensionsListFile" "$OutDir\"
+Copy-Item "$RemoteScriptsDefinitions" "$OutDir\" -ErrorAction Ignore
+Copy-Item "$RemoteScripts" "$OutDir\" -Recurse -ErrorAction Ignore
 
 Write-Output "Downloading VS Code $LatestVersion (sha256=$LatestCommit)..."
 $VsCodeDownloadUrl = "https://update.code.visualstudio.com/${LatestVersion}/win32-x64-user/stable"
@@ -60,7 +64,7 @@ foreach ($ExtensionIdentifier in $allExtensions)
 
 Write-Output "Packing everything into '${OutDir}.zip'"
 $CompressArgs = @{
-  LiteralPath = @("$OutDir") + (Get-ChildItem ".\jumphost_scripts").FullName
+  LiteralPath = @("$OutDir") + (Get-ChildItem -Recurse ".\jumphost_scripts").FullName
   CompressionLevel = "NoCompression"
   DestinationPath = ".\vscode-${LatestVersion}.zip"
   Force = $true
