@@ -1,3 +1,10 @@
+<#
+.SYNOPSIS
+get_version_commit_sha.ps1 maps a target VS Code Version to its Git commit SHA using GitHub's API.
+
+This script closely follows the information in `docs\GitHub API how to get from tag to commit SHA.pdf`.
+#>
+
 param (
     [Parameter(Mandatory=$true)] [string] $Version,
     [Parameter(Mandatory=$false)] [string] $Owner = "microsoft",
