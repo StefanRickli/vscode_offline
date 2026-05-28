@@ -30,6 +30,7 @@ try {
     $Commit = (Get-Content "commit.txt").Trim()
     $RemoteTempDir = "/tmp/vscode-${Version}"
     $RemoteInstallScriptPath = ".\remote_scripts\install_vscode_server.sh"
+    $CodeServerPatcherPath = ".\remote_scripts\patch_vscode_server.sh"
 
     $PostInstallScripts = @()
     if (Test-Path "remote_post_install_scripts.json") {
@@ -41,7 +42,7 @@ try {
 
     $ArchiveName = "vscode-server-${Version}-${TargetHost}"
     $VSCodeServerArchive = (Get-ChildItem ".\vscode-server-linux-x64-${Version}.tar.gz")[0].Name
-    $FileList = @("$VSCodeServerArchive") + $RemoteInstallScriptPath + $PostInstallScripts.FullName
+    $FileList = @("$VSCodeServerArchive") + $RemoteInstallScriptPath + $CodeServerPatcherPath + $PostInstallScripts.FullName
 
     Remove-Item -Force -ErrorAction Ignore @(".\${ArchiveName}.tar", ".\${ArchiveName}.tar.gz")
 
@@ -65,7 +66,9 @@ tar xf "${TargetUserHome}/${VSCodeServerArchive}" -C "${RemoteTempDir}" || exit 
 
 echo "Running vscode-server install script..."
 chmod +x "${RemoteTempDir}/install_vscode_server.sh" || exit 1
+chmod +x "${RemoteTempDir}/patch_vscode_server.sh" || exit 1
 "${RemoteTempDir}/install_vscode_server.sh" "${RemoteTempDir}" "${VSCodeServerArchive}" "${TargetBinDir}" || exit 1
+"${RemoteTempDir}/patch_vscode_server.sh" "${TargetBinDir}/bin/code-server" || exit 1
 
 echo "Running post-installation scripts defined in remote_post_install_scripts.json"
 chmod +x "${RemoteTempDir}"/post_install/*.sh
