@@ -67,6 +67,15 @@ echo "Running vscode-server install script..."
 chmod +x "${RemoteTempDir}/install_vscode_server.sh" || exit 1
 "${RemoteTempDir}/install_vscode_server.sh" "${RemoteTempDir}" "${VSCodeServerArchive}" "${TargetBinDir}" || exit 1
 
+echo "Running post-installation scripts defined in remote_post_install_scripts.json"
+chmod +x "${RemoteTempDir}"/post_install/*.sh
+
+for file in "${RemoteTempDir}"/post_install/*.sh; do
+    echo "Running: $file"
+    "$file"
+done
+echo "Done."
+
 echo "VS Code Server ${Version} installation successful."
 "@ -replace "`r", ""
 
